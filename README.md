@@ -1,7 +1,5 @@
 ###Face Tracker with the Xbox Sensor
 
-####Author: [Olalekan Ogunmolu](http://lakehanne.github.io)
-
 ####Introduction
 Implements the standard **face tracker** and **eye detection** based on **haar cascades**.
 The code runs on opencv-openni api and you would need to install the OpenNI library and PrimeSensorModule for OpenNI and
