@@ -1,0 +1,3 @@
+/home/ajith92/Kinect/Xbox_tracker/CMakeFiles/listener.dir
+/home/ajith92/Kinect/Xbox_tracker/CMakeFiles/ros_listener.dir
+/home/ajith92/Kinect/Xbox_tracker/CMakeFiles/xbox_tracker.dir

@@ -1,0 +1,12 @@
+Scanning dependencies of target listener
+[ 33%] Building CXX object CMakeFiles/listener.dir/xbox_listener.cpp.o
+Linking CXX executable listener
+[ 33%] Built target listener
+Scanning dependencies of target ros_listener
+[ 66%] Building CXX object CMakeFiles/ros_listener.dir/ros_listener.cpp.o
+Linking CXX executable ros_listener
+[ 66%] Built target ros_listener
+Scanning dependencies of target xbox_tracker
+[100%] Building CXX object CMakeFiles/xbox_tracker.dir/xbox_tracker.cpp.o
+Linking CXX executable xbox_tracker
+[100%] Built target xbox_tracker
