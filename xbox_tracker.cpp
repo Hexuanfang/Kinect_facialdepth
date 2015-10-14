@@ -58,8 +58,8 @@ const float Rt =  100;//70;//52.6832;          //hardcoding variance of xbox sen
 
 float xboxdepth;          //at global scope
 float xboxdepth1;
-unsigned short worldx;
-unsigned short worldy;
+float worldx;
+float worldy;
 float imagex;
 float imagey;
 /** Function Prototypes */
@@ -77,10 +77,10 @@ const Matx33f f(5.2334888056605109e+02, 0, 3.3077859778899148e+02, 0,
 
 
 //Extrinsic
-const Matx34f RT(5.34886047e+02, -3.24787021e+00, 3.19622101e+02,
-       -1.41674719e+01, 4.01342821e+00, 5.22246948e+02, 2.73871185e+02,
-       -3.31116033e+00, 1.74872335e-02, -1.22513799e-02, 9.99772012e-01,
-       -1.09167360e-02 );
+const Matx34f RT( -2.9439267746187747e-01, -5.0108474790635356e-02,
+       2.1457251239348534e-02,-1.4561136327420629e-01, -1.7701398188412559e-01, 4.0347449448087230e-01,
+       6.7394505010246741e-02,6.7054632218336907e-02, -2.6425480619307984e-01, -1.0563205469296159e-01,
+       -2.9085061245132648e-01, 6.7628472020256047e-01 );
 
 
 //Mat I = Mat(f);
@@ -381,7 +381,32 @@ void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat 
   }
   return 0;
 }
+    Point_<float> compute_world_points(float imagex, float imagey, float xboxdepth1){
+  ////////////////////Computation begins here ////////////////////////////////////////////      
+        
+      Matx33f IP(imagex - T(0,0), 
+                    imagey- T(0,1),
+                     1 - T(0,2));
 
+      Matx33f WP = Prod.inv()*IP;
+      // cv::solve(Prod,IP,WP);
+       
+       cout<< "ROWS"<<IP.rows << endl;
+       cout<< "columns"<<IP.cols << endl;
+       
+       // cout << WP(0,0) << endl;
+       // cout << WP(1,0)<< endl;
+       // cout << WP(2,0) << endl;
+      // unsigned char *wp = (unsigned char*)(IP.data);
+       
+      worldx = float(((WP(0,0)/WP(2,0))*xboxdepth1));
+      worldy = float(((WP(1,0)/WP(2,0))*xboxdepth1));
+       Point_<float> worldxy(worldx,worldy);
+       
+       
+       return worldxy;
+    
+    }
 Mat detectfeatures(Mat color, Mat depth)
 {
     Mat frame_gray, gray_resized, color_resized, depth_resized;
@@ -450,50 +475,22 @@ Mat detectfeatures(Mat color, Mat depth)
         float deltaT = chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0;
         Mat measurement = Mat(1, 1, CV_32F, xboxdepth);
         
+        Point_<float> worldxy = compute_world_points(imagex,imagey,xboxdepth1);
         
-       
-       //Matx31f worldp(1,1,1);
-  ////////////////////Computation begins here ////////////////////////////////////////////      
+       // cout << worldxy.x << endl;
+       // cout << worldxy.y << endl;
         
-      Matx33f IP(imagex - T(0,0), 
-                    imagey- T(0,1),
-                     1 - T(0,2));
-       
-      // Mat WP = Mat(worldp);
-       //Mat IP = Mat(imagep);
-       //Mat IP(3,1,CV_64FC1);
-      
-      // IP.push_back(3);
-      //IP.push_back(2);
-      // IP.push_back(1);
-      
-      Matx33f WP = Prod.inv()*IP;
-      
-      // cv::solve(Prod,IP,WP);
-       
-      // cout<< "ROWS"<<IP.rows << endl;
-      // cout<< "columns"<<IP.cols << endl;
-       
-      // unsigned char *wp = (unsigned char*)(IP.data);
-       
-      worldx = short((WP(0,0)/WP(2,0)*xboxdepth1));
-      worldy = short((WP(1,0)/WP(2,0)*xboxdepth1));
-       
-     // cout << WP(0,0) << endl;
-     // cout << WP(1,0)<< endl;
-     // cout << WP(2,0) << endl;
-      
         std::ostringstream osf; 
         std::ostringstream osf1;
         std::ostringstream osf2;
         osf.str(" ");
-        osf <<"World Z " << xboxdepth1 << " mm";
+        osf <<"World Z " << xboxdepth1 << " m";
         
         osf1.str(" ");
-        osf1 <<"World X " << worldx << " mm";
+        osf1 <<"World X " << worldxy.x*1000 << " mm";
         
         osf2.str(" ");
-        osf2 <<"World Y " << worldy << " mm";
+        osf2 <<"World Y " << worldxy.y*1000 << " mm";
         
         putText(color, oss.str(), Point(20,35), font, sizeText, colorText, lineText,CV_AA);
         putText(color_resized, osf1.str(), Point(20,55), font, sizeText, colorText, lineText,CV_AA);
