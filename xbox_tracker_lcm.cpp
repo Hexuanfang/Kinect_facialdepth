@@ -24,11 +24,16 @@
 //#include "opencv2/core/utility.hpp"
 //#include "opencv/core/ocl.hpp"
 
+#include <lcm/lcm-cpp.hpp>
+
+#include "lcm-1.2.1/exlcm/kalman.hpp"
+
 using namespace cv;
 using namespace std;
 //using namespace cv::gpu;
 
 /** Global variables */
+
 
 const String face_cascade_name = "haarcascade_frontalface_alt2.xml";
 const String eyes_cascade_name = "haarcascade_eye.xml";
@@ -56,53 +61,15 @@ Mat state(2, 1, CV_32F);
 const float Qt = 2000; //1500.0;
 const float Rt =  100;//70;//52.6832;          //hardcoding variance of xbox sensor
 
-float xboxdepth;          //at global scope
-float xboxdepth1;
-unsigned short worldx;
-unsigned short worldy;
-float imagex;
-float imagey;
+unsigned short xboxdepth;          //at global scope
+
 /** Function Prototypes */
 Mat detectfeatures( Mat color, Mat depthMap );
 void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat Kk);
 void kalman(float deltaT, Mat measurement);
-
+void lcm_talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat Kk);
 //Mat depth, color;
 
-// Camera Calibration Parameters
-
-//Intrinsic
-const Matx33f f(5.2334888056605109e+02, 0, 3.3077859778899148e+02, 0,
-       5.2640349339321790e+02, 2.4796327924961466e+02, 0, 0, 1);
-
-
-//Extrinsic
-const Matx34f RT(5.34886047e+02, -3.24787021e+00, 3.19622101e+02,
-       -1.41674719e+01, 4.01342821e+00, 5.22246948e+02, 2.73871185e+02,
-       -3.31116033e+00, 1.74872335e-02, -1.22513799e-02, 9.99772012e-01,
-       -1.09167360e-02 );
-
-
-//Mat I = Mat(f);
-//Mat E = Mat(RT);
-
-//Mat P = I*E;
-Matx34f Ptemp = f*RT;
-Matx33f Prod1(Ptemp(0,0),Ptemp(0,1),Ptemp(0,2),
-                Ptemp(1,0),Ptemp(1,1),Ptemp(0,2),
-                Ptemp(2,0),Ptemp(2,1),Ptemp(2,2));
-
-//Distortion
-const float dist =  1.2453643444153988e-01; // will change. Using this for calculation purpose.
-       
-Matx33f Prod = Prod1*(1/dist); //first 3 columns of projection matrix
-
-Matx31f T(Ptemp(0,3),Ptemp(1,3),Ptemp(2,3)); // last column of projection matrix
-       //unsigned char *offset = (unsigned char*)(T.data);
-      // float offx = float(&offset[0]);
-      // float offy = float(&offset[1]);
-      // float offz = float(&offset[2]);
-       
 static void help()
 {
         cout << "\nAll supported output map types:\n"
@@ -199,7 +166,7 @@ Mat  HT, inter,   Rk;
     float xboxobs = measurement.at<float>(0); 
 
     //talk values in a named pipe
-    talker(xboxobs, prediction, update, Pkkm1, Pkk, Kk) ;     
+    lcm_talker(xboxobs, prediction, update, Pkkm1, Pkk, Kk) ;     
 /*
     cv::FileStorage fx;
     fx.open(estimates, cv::FileStorage::APPEND);
@@ -354,14 +321,43 @@ void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat 
         cout << "est_error: " << est_error << " | pred_error: " << pred_error << " | gain: "<< gain << endl;
     }
 
+void lcm_talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat Kk)
+{
+    lcm::LCM lcm;
+    if(!lcm.good())
+        return 1;
+    
+    exlcm::kalman my_data;
+  
+    my_data.xboxobs = xboxobs;
+     my_data.xboxpred    = prediction.at<float>(0);
+     my_data.xboxpred1   = prediction.at<float>(1);
+     my_data.xboxupd     = update.at<float>(0);
+     my_data.xboxupd1    = update.at<float>(1);
+     my_data.gain        = KF.gain.at<float>(0);
+     my_data.gain1       = KF.gain.at<float>(1);
+
+     my_data.pred_error  = Pkkm1.at<float>(0, 0);
+     my_data.pred_error1 = Pkkm1.at<float>(0, 1);
+     my_data.pred_error2 = Pkkm1.at<float>(1, 0);
+     my_data.pred_error3 = Pkkm1.at<float>(1, 1);
+
+     my_data.est_error   = Pkk.at<float>(0, 0);
+     my_data.est_error1  = Pkk.at<float>(0, 1);
+     my_data.est_error2  = Pkk.at<float>(1, 0);
+     my_data.est_error3  = Pkk.at<float>(1, 1);
+       
+     lcm.publish("EXAMPLE", &my_data);
+}
+
     size_t frameCount = 0;
     double fps = 0;
     double totalT = 0.0;
     long frmCnt = 0;
     double elapsed;
     Size dsize;
-    double fx = 0.95;
-    double fy = 0.95;
+    double fx = 0.5;
+    double fy = 0.5;
     int interpol=INTER_LINEAR;
     
 
@@ -372,19 +368,10 @@ void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat 
     const Size face_minSize = Size(5, 5);
 
     std::ostringstream oss;
-    
-    float raw_depth_to_meters(short raw_depth) // Kinect depth translation. raw to depth in meters.
-{
-  if (raw_depth < 2047)
-  {
-   return 1.0 / (raw_depth * -0.0030711016 + 3.3309495161);
-  }
-  return 0;
-}
 
 Mat detectfeatures(Mat color, Mat depth)
 {
-    Mat frame_gray, gray_resized, color_resized, depth_resized;
+    Mat frame_gray, gray_resized, color_resized;
     Mat faces_host, eyes_host;
     //Mat eyes,faces;
 
@@ -395,7 +382,7 @@ Mat detectfeatures(Mat color, Mat depth)
         
     resize(frame_gray, gray_resized, Size(), fx, fy, interpol);
     resize(color, color_resized, Size(), fx, fy, interpol);         //for opencv window       
-    resize(depth, depth_resized, Size(), fx, fy, interpol);           
+               
     //Mat frame_gray_gpu(gray_resized);                  //move grayed color image to gpu
 
     //-- Detect faces    
@@ -403,24 +390,16 @@ Mat detectfeatures(Mat color, Mat depth)
      std::vector<Rect> faces;
     
    // int faces_detect = face_cascade.detectMulti //-- Detect faces
-  face_cascade.detectMultiScale( gray_resized, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+  face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
 
-  
-  t = ( (double)getTickCount() - t)/getTickFrequency();               //measure total time to detect and download
-
-    totalT += t;
-    ++frmCnt;
-
-    cout << "\nfps: " << 1.0 / (totalT / (double)frmCnt) << endl;
-    
   for( size_t i = 0; i < faces.size(); i++ )
   {
       std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
         start = chrono::high_resolution_clock::now();
-    Point face_center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
-    ellipse( color_resized, face_center, Size( faces[i].width*0.5, faces[i].height*0.75), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
+    Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
+    ellipse( color, center, Size( faces[i].width*0.5, faces[i].height*0.5), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
 
-    Mat faceROI = gray_resized( faces[i] );
+    Mat faceROI = frame_gray( faces[i] );
     std::vector<Rect> eyes;
 
     //-- In each face, detect eyes
@@ -428,77 +407,26 @@ Mat detectfeatures(Mat color, Mat depth)
 
     for( size_t j = 0; j < eyes.size(); j++ )
      {
-       Point eye_center( faces[i].x + eyes[j].x + eyes[j].width*0.5, faces[i].y + eyes[j].y + eyes[j].height*0.5 );
+       Point center( faces[i].x + eyes[j].x + eyes[j].width*0.5, faces[i].y + eyes[j].y + eyes[j].height*0.5 );
        int radius = cvRound( (eyes[j].width + eyes[j].height)*0.25 );
-       circle( color_resized, eye_center, radius, Scalar( 255, 0, 0 ), 4, 8, 0 );
-       if(eye_center.x > face_center.x)
-       xboxdepth  = raw_depth_to_meters((depth_resized.at<unsigned short>(eye_center.y, eye_center.x) - 208 - 175));
-       else if (eye_center.x < face_center.x){
-       xboxdepth1 = raw_depth_to_meters((depth_resized.at<unsigned short>(eye_center.y, eye_center.x) - 208 - 175));
-       imagex = float(eye_center.x);
-       imagey = float(eye_center.y);
-       //Matx41f scalar(1,1,1,1);
-       // S = Mat(scalar);
-       
-       }
+       circle( color_resized, center, radius, Scalar( 255, 0, 0 ), 4, 8, 0 );
+       xboxdepth  = (depth.at<unsigned short>(center.y, center.x) - 208 - 175);
      }
-    
+         
         
 
         end = chrono::high_resolution_clock::now(); 
-        
+
         float deltaT = chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0;
         Mat measurement = Mat(1, 1, CV_32F, xboxdepth);
-        
-        
-       
-       //Matx31f worldp(1,1,1);
-  ////////////////////Computation begins here ////////////////////////////////////////////      
-        
-      Matx33f IP(imagex - T(0,0), 
-                    imagey- T(0,1),
-                     1 - T(0,2));
-       
-      // Mat WP = Mat(worldp);
-       //Mat IP = Mat(imagep);
-       //Mat IP(3,1,CV_64FC1);
-      
-      // IP.push_back(3);
-      //IP.push_back(2);
-      // IP.push_back(1);
-      
-      Matx33f WP = Prod.inv()*IP;
-      
-      // cv::solve(Prod,IP,WP);
-       
-      // cout<< "ROWS"<<IP.rows << endl;
-      // cout<< "columns"<<IP.cols << endl;
-       
-      // unsigned char *wp = (unsigned char*)(IP.data);
-       
-      worldx = short((WP(0,0)/WP(2,0)*xboxdepth1));
-      worldy = short((WP(1,0)/WP(2,0)*xboxdepth1));
-       
-     // cout << WP(0,0) << endl;
-     // cout << WP(1,0)<< endl;
-     // cout << WP(2,0) << endl;
-      
+                
         std::ostringstream osf; 
-        std::ostringstream osf1;
-        std::ostringstream osf2;
+
         osf.str(" ");
-        osf <<"World Z " << xboxdepth1 << " mm";
-        
-        osf1.str(" ");
-        osf1 <<"World X " << worldx << " mm";
-        
-        osf2.str(" ");
-        osf2 <<"World Y " << worldy << " mm";
-        
-        putText(color, oss.str(), Point(20,35), font, sizeText, colorText, lineText,CV_AA);
-        putText(color_resized, osf1.str(), Point(20,55), font, sizeText, colorText, lineText,CV_AA);
-        putText(color_resized, osf2.str(), Point(20,75), font, sizeText, colorText, lineText,CV_AA); 
-        putText(color_resized, osf.str(), Point(20,95), font, sizeText, colorText, lineText,CV_AA);
+        osf <<"Face Point: " << xboxdepth << " mm";
+
+        putText(color_resized, oss.str(), Point(20,35), font, sizeText, colorText, lineText,CV_AA);
+        putText(color_resized, osf.str(), Point(20,55), font, sizeText, colorText, lineText,CV_AA);
         
         cout <<  "\n\n deltaT: " << deltaT << endl;
         kalman(deltaT, measurement);       //filter observation from kinect    
@@ -625,3 +553,4 @@ int main( int argc, char* argv[] )
 /*
 cd ../; rm -rf build; mkdir build; cd build; cmake ../; make; cp ../Haar/*.xml `pwd`; ./xbox_tracker
 */
+
