@@ -82,10 +82,17 @@ link_directories(${OpenCV_LIBS})
 #Declare the executable target built from your sources
 add_executable(xbox_tracker xbox_tracker.cpp)
 add_executable(listener xbox_listener.cpp)
-add_executable(ros_listener ros_listener.cpp)    #as a check
+add_executable(ros_listener ros_listener.cpp)  
+add_executable(kinect_calibration kinect_calibration.cpp)
+add_executable(kinect_calibration_depth kinect_calibration_depth.cpp)
+  #as a check
 
 # Link your application with OpenCV libraries
 target_link_libraries(xbox_tracker ${OpenCV_LIBS})
 target_link_libraries(xbox_tracker ${OpenCV_LIBRARIES})
 target_link_libraries(listener ${OpenCV_LIBRARIES})
 target_link_libraries(listener ${Boost_LIBRARIES})
+target_link_libraries(kinect_calibration ${OpenCV_LIBS})
+target_link_libraries(kinect_calibration ${OpenCV_LIBRARIES})
+target_link_libraries(kinect_calibration_depth ${OpenCV_LIBS})
+target_link_libraries(kinect_calibration_depth ${OpenCV_LIBRARIES})

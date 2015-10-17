@@ -33,37 +33,14 @@ int main(int argc, char* argv[])
     Mat img, gray;
      cout << "Device opening ..." << endl;
     VideoCapture capture;
-
-    capture.open( CV_CAP_OPENNI );
+    capture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('D','I','V','4'));
+    capture.open( "ir_pics/ir-%03d.png" );
+    
+    if (!capture.isOpened()){
+    cout << "error loading file" << endl;
+    return -1;
+    }
         
-    //registration
-    if(capture.get( CV_CAP_PROP_OPENNI_REGISTRATION ) == 0) 
-    {
-        capture.set(CV_CAP_PROP_OPENNI_REGISTRATION, 1);
-   
-        cout << "\nImages have been registered ..." << endl;
-    }
-    //cout << cv::getBuildInformation() << endl;
-
-    if( !capture.isOpened() )
-    {
-        cout << "Can not open a capture object." << endl;
-        return -1;
-    }
-
-    if( capture.get( CV_CAP_OPENNI_IMAGE_GENERATOR_PRESENT ) )
-    {
-        cout <<
-            "\nImage generator output mode:" << endl <<
-            "FRAME_WIDTH   " << capture.get( CV_CAP_OPENNI_IMAGE_GENERATOR+CV_CAP_PROP_FRAME_WIDTH ) << 
-            "   | FRAME_HEIGHT  " << capture.get( CV_CAP_OPENNI_IMAGE_GENERATOR+CV_CAP_PROP_FRAME_HEIGHT ) << 
-            "   | FPS           " << capture.get( CV_CAP_OPENNI_IMAGE_GENERATOR+CV_CAP_PROP_FPS ) << endl;
-    }
-    else
-    {
-        cout << "\nDevice doesn't contain image generator." << endl;
-    }  
-
     int success = 0;
     int k = 0;
     bool found = false;
@@ -76,18 +53,23 @@ int main(int argc, char* argv[])
         }
             //capture.retrieve( depth, CV_CAP_OPENNI_DEPTH_MAP );
             
-            capture.retrieve( img, CV_CAP_OPENNI_DISPARITY_MAP);
+            capture.retrieve(img);
+            cvtColor(img, gray, CV_BGR2GRAY);
+            //capture.retrieve( depth, CV_CAP_OPENNI_DEPTH_MAP );
+            
+          
         //cvtColor(img, gray, CV_BGR2GRAY);
-        found = findChessboardCorners(img, board_sz, corners, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-
+        found = findChessboardCorners(gray, board_sz, corners, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        cout << "displaying images" << endl;
         if (found)
-        {
+        {   cout << "drawing chessboard corners" << endl;
             cornerSubPix(gray, corners, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+            
             drawChessboardCorners(gray, board_sz, corners, found);
         }
-
-        imshow("image", img);
-        //imshow("corners", gray);
+        
+        //imshow("image", img);
+        imshow("corners", gray);
 
         k = waitKey(1);
         if (found)
@@ -124,7 +106,7 @@ int main(int argc, char* argv[])
     
     calibrateCamera(object_points, image_points, img.size(), intrinsic, distcoeffs, rvecs, tvecs);
 
-    FileStorage fs1("mycalib_color.yml", FileStorage::WRITE);
+    FileStorage fs1("mycalib_depth.yml", FileStorage::WRITE);
     fs1 << "CM1" << intrinsic;
     fs1 << "D1" << distcoeffs;
 
