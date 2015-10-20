@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     vector<Point3f> obj;
     for (int j=0; j<board_n; j++)
     {
-        obj.push_back(Point3f(j/board_w, j%board_w, 0.0f));
+        obj.push_back(Point3f(j/board_h, j%board_h, 0.0f));
     }
 
     Mat img, gray;
@@ -76,30 +76,29 @@ int main(int argc, char* argv[])
         }
             //capture.retrieve( depth, CV_CAP_OPENNI_DEPTH_MAP );
             
-            capture.retrieve( img, CV_CAP_OPENNI_DISPARITY_MAP);
-        //cvtColor(img, gray, CV_BGR2GRAY);
-        found = findChessboardCorners(img, board_sz, corners, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+            capture.retrieve( img, CV_CAP_OPENNI_BGR_IMAGE );
+        cvtColor(img, gray, CV_BGR2GRAY);
+        found = findChessboardCorners(gray, board_sz, corners, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
 
         if (found)
         {
-            cornerSubPix(gray, corners, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+            cornerSubPix(gray, corners, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
             drawChessboardCorners(gray, board_sz, corners, found);
         }
 
-        imshow("image", img);
-        //imshow("corners", gray);
+       // imshow("image", img);
+        imshow("corners", gray);
 
         k = waitKey(1);
         if (found)
         {
             k = waitKey(0);
-            printf ("k\n");
         }
         if (k == 27)
         {
             break;
         }
-        if (k ==' ' && found !=0)
+        if (k == 1048608 && found !=0)
         {
             image_points.push_back(corners);
             object_points.push_back(obj);
@@ -124,9 +123,10 @@ int main(int argc, char* argv[])
     
     calibrateCamera(object_points, image_points, img.size(), intrinsic, distcoeffs, rvecs, tvecs);
 
-    FileStorage fs1("mycalib_color.yml", FileStorage::WRITE);
+    FileStorage fs1("mycalib.yml", FileStorage::WRITE);
     fs1 << "CM1" << intrinsic;
     fs1 << "D1" << distcoeffs;
+    fs1 << "Image Points " << image_points;
 
     printf("calibration done\n");
 

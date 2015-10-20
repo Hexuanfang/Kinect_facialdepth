@@ -75,13 +75,13 @@ int main(int argc, char* argv[])
         if (found)
         {
             k = waitKey(0);
-            printf ("k\n");
+           cout << found << "  " << success <<  endl;
         }
         if (k == 27)
         {
             break;
         }
-        if (k ==' ' && found !=0)
+        if (k == 1048608 && found !=0)
         {
             image_points.push_back(corners);
             object_points.push_back(obj);
@@ -109,6 +109,7 @@ int main(int argc, char* argv[])
     FileStorage fs1("mycalib_depth.yml", FileStorage::WRITE);
     fs1 << "CM1" << intrinsic;
     fs1 << "D1" << distcoeffs;
+    fs1 << "Image Points"<< image_points;
 
     printf("calibration done\n");
 
