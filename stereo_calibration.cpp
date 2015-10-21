@@ -4,6 +4,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "opencv2/contrib/contrib.hpp"
 #include <stdio.h>
+#include <iostream>
 
 using namespace cv;
 using namespace std;
@@ -13,8 +14,8 @@ int main(int argc, char* argv[])
     //int numBoards = atoi(argv[1]);
     int board_w = atoi(argv[1]);
     int board_h = atoi(argv[2]);
-    string rgb_intrinsics = atoi(argv[3]);
-    string depth_intrinsics = atoi(argv[4]);
+    const char* rgb_intrinsics = argv[3];
+    const char* depth_intrinsics = argv[4];
     
     Size board_sz = Size(board_w, board_h);
     int board_n = board_w*board_h;
@@ -146,6 +147,7 @@ int main(int argc, char* argv[])
             cornerSubPix(gray2, corners2, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
             drawChessboardCorners(gray2, board_sz, corners2, found2);
         }
+            imshow("image2", gray2);
             
             k = waitKey(10);
         if (found2)
@@ -180,7 +182,7 @@ int main(int argc, char* argv[])
     FileStorage fs1(rgb_intrinsics, FileStorage::READ);
     FileStorage fs2(depth_intrinsics, FileStorage::READ);
     fs1["CM1"] >> CM1;
-    fs2["CM1"] >> CM2;
+    fs2["CM2"] >> CM2;
     //Mat CM1 = Mat(3, 3, CV_64FC1);
     //Mat CM2 = Mat(3, 3, CV_64FC1);
      fs1["D1"] >> D1;
@@ -192,15 +194,15 @@ int main(int argc, char* argv[])
                     cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5), 
                     CV_CALIB_FIX_INTRINSIC);
 
-    FileStorage fs1("mystereocalib.yml", FileStorage::WRITE);
-    fs1 << "CM1" << CM1;
-    fs1 << "CM2" << CM2;
-    fs1 << "D1" << D1;
-    fs1 << "D2" << D2;
-    fs1 << "R" << R;
-    fs1 << "T" << T;
-    fs1 << "E" << E;
-    fs1 << "F" << F;
+    FileStorage fs3("mystereocalib.yml", FileStorage::WRITE);
+    fs3 << "CM1" << CM1;
+    fs3 << "CM2" << CM2;
+    fs3 << "D1" << D1;
+    fs3 << "D2" << D2;
+    fs3 << "R" << R;
+    fs3 << "T" << T;
+    fs3 << "E" << E;
+    fs3 << "F" << F;
 
     printf("Done Calibration\n");
 
@@ -208,11 +210,11 @@ int main(int argc, char* argv[])
 
     Mat R1, R2, P1, P2, Q;
     stereoRectify(CM1, D1, CM2, D2, img1.size(), R, T, R1, R2, P1, P2, Q);
-    fs1 << "R1" << R1;
-    fs1 << "R2" << R2;
-    fs1 << "P1" << P1;
-    fs1 << "P2" << P2;
-    fs1 << "Q" << Q;
+    fs3 << "R1" << R1;
+    fs3 << "R2" << R2;
+    fs3 << "P1" << P1;
+    fs3 << "P2" << P2;
+    fs3 << "Q" << Q;
 
     printf("Done Rectification\n");
 

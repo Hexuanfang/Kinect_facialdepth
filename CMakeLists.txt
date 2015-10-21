@@ -85,6 +85,7 @@ add_executable(listener xbox_listener.cpp)
 add_executable(ros_listener ros_listener.cpp)  
 add_executable(kinect_calibration kinect_calibration.cpp)
 add_executable(kinect_calibration_depth kinect_calibration_depth.cpp)
+add_executable(stereo_calibration stereo_calibration.cpp)
   #as a check
 
 # Link your application with OpenCV libraries
@@ -96,3 +97,5 @@ target_link_libraries(kinect_calibration ${OpenCV_LIBS})
 target_link_libraries(kinect_calibration ${OpenCV_LIBRARIES})
 target_link_libraries(kinect_calibration_depth ${OpenCV_LIBS})
 target_link_libraries(kinect_calibration_depth ${OpenCV_LIBRARIES})
+target_link_libraries(stereo_calibration ${OpenCV_LIBS})
+target_link_libraries(stereo_calibration ${OpenCV_LIBRARIES})
