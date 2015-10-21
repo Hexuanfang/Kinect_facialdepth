@@ -182,11 +182,11 @@ int main(int argc, char* argv[])
     FileStorage fs1(rgb_intrinsics, FileStorage::READ);
     FileStorage fs2(depth_intrinsics, FileStorage::READ);
     fs1["CM1"] >> CM1;
-    fs2["CM2"] >> CM2;
+    fs2["CM1"] >> CM2;
     //Mat CM1 = Mat(3, 3, CV_64FC1);
     //Mat CM2 = Mat(3, 3, CV_64FC1);
      fs1["D1"] >> D1;
-     fs1["D2"] >> D2;
+     fs1["D1"] >> D2;
     //Mat CM1,CM2,D1,D2,R, T, E, F;
 
     stereoCalibrate(object_points, imagePoints1, imagePoints2, 
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
                     cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5), 
                     CV_CALIB_FIX_INTRINSIC);
 
-    FileStorage fs3("mystereocalib.yml", FileStorage::WRITE);
+    FileStorage fs3("mystereocalib1.yml", FileStorage::WRITE);
     fs3 << "CM1" << CM1;
     fs3 << "CM2" << CM2;
     fs3 << "D1" << D1;

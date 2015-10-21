@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
         //imshow("image", img);
         imshow("corners", gray);
 
-        k = waitKey(1);
+        k = waitKey(10);
         if (found)
         {
             k = waitKey(0);
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
         {
             break;
         }
-        if (k == 1048608 && found !=0)
+        if (k == ' ' && found !=0)
         {
             image_points.push_back(corners);
             object_points.push_back(obj);
