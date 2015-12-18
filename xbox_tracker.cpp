@@ -72,37 +72,46 @@ void kalman(float deltaT, Mat measurement);
 // Camera Calibration Parameters
 
 //Intrinsic
-const Matx33f f(5.2334888056605109e+02, 0, 3.3077859778899148e+02, 0,
-       5.2640349339321790e+02, 2.4796327924961466e+02, 0, 0, 1);
-
-
-//Extrinsic
-const Matx34f RT( -2.9439267746187747e-01, -5.0108474790635356e-02,
-       2.1457251239348534e-02,-1.4561136327420629e-01, -1.7701398188412559e-01, 4.0347449448087230e-01,
-       6.7394505010246741e-02,6.7054632218336907e-02, -2.6425480619307984e-01, -1.0563205469296159e-01,
-       -2.9085061245132648e-01, 6.7628472020256047e-01 );
+//const Matx33f f(5.2334888056605109e+02, 0, 3.3077859778899148e+02, 0,
+//       5.2640349339321790e+02, 2.4796327924961466e+02, 0, 0, 1);
+//
+//const Matx33f f_d(5.9421434211923247e+02,0,3.3930780975300314e+02,
+//        0,5.9104053696870778e+02,2.4273913761751615e+02,0,0,1);
+////Distortion
+//Mat_<float> dstCoeff(5,1);
+//Mat_<float> dstCoeff_d(5,1);
+//
+//
+// 
+////Extrinsic
+//const Matx34f RT( 9.9984628826577793e-01, 1.2635359098409581e-03,
+//-1.7487233004436643e-02, -1.4779096108364480e-03,
+//9.9992385683542895e-01, -1.2251380107679535e-02,
+//1.7470421412464927e-02, 1.2275341476520762e-02,
+//9.9977202419716948e-01 );
 
 
 //Mat I = Mat(f);
 //Mat E = Mat(RT);
 
 //Mat P = I*E;
-Matx34f Ptemp = f*RT;
-Matx33f Prod1(Ptemp(0,0),Ptemp(0,1),Ptemp(0,2),
-                Ptemp(1,0),Ptemp(1,1),Ptemp(0,2),
-                Ptemp(2,0),Ptemp(2,1),Ptemp(2,2));
+//Matx34f Ptemp = f*RT;
+//Matx33f Prod1(Ptemp(0,0),Ptemp(0,1),Ptemp(0,2),
+               // Ptemp(1,0),Ptemp(1,1),Ptemp(0,2),
+               // Ptemp(2,0),Ptemp(2,1),Ptemp(2,2));
 
 //Distortion
-const float dist =  1.2453643444153988e-01; // will change. Using this for calculation purpose.
+//const float dist =  1.2453643444153988e-01; // will change. Using this for calculation purpose.
        
-Matx33f Prod = Prod1*(1/dist); //first 3 columns of projection matrix
+//Matx33f Prod = Prod1; //first 3 columns of projection matrix
 
-Matx31f T(Ptemp(0,3),Ptemp(1,3),Ptemp(2,3)); // last column of projection matrix
+//Matx31f T(Ptemp(0,3),Ptemp(1,3),Ptemp(2,3)); // last column of projection matrix
        //unsigned char *offset = (unsigned char*)(T.data);
       // float offx = float(&offset[0]);
       // float offy = float(&offset[1]);
       // float offz = float(&offset[2]);
-       
+  Mat CM1,CM2,D1,D2,R, T,RotT,P,P1,RotT1;
+  
 static void help()
 {
         cout << "\nAll supported output map types:\n"
@@ -381,38 +390,79 @@ void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat 
   }
   return 0;
 }
-    Point_<float> compute_world_points(float imagex, float imagey, float xboxdepth1){
-  ////////////////////Computation begins here ////////////////////////////////////////////      
-        
-      Matx33f IP(imagex - T(0,0), 
-                    imagey- T(0,1),
-                     1 - T(0,2));
-
-      Matx33f WP = Prod.inv()*IP;
-      // cv::solve(Prod,IP,WP);
-       
-       cout<< "ROWS"<<IP.rows << endl;
-       cout<< "columns"<<IP.cols << endl;
-       
-       // cout << WP(0,0) << endl;
-       // cout << WP(1,0)<< endl;
-       // cout << WP(2,0) << endl;
-      // unsigned char *wp = (unsigned char*)(IP.data);
-       
-      worldx = float(((WP(0,0)/WP(2,0))*xboxdepth1));
-      worldy = float(((WP(1,0)/WP(2,0))*xboxdepth1));
-       Point_<float> worldxy(worldx,worldy);
-       
-       
-       return worldxy;
+//    Point_<float> compute_world_points(float imagex, float imagey, float xboxdepth1){
+//  ////////////////////Computation begins here ////////////////////////////////////////////      
+//        
+//      Matx33f IP(imagex - T(0,0), 
+//                    imagey- T(0,1),
+//                     1 - T(0,2));
+//
+//      //Matx33f WP = Prod.inv()*IP;
+//      // cv::solve(Prod,IP,WP);
+//       
+//       cout<< "ROWS"<<IP.rows << endl;
+//       cout<< "columns"<<IP.cols << endl;
+//       //cout<< RT(2,2)<<endl;
+//       // cout << WP(0,0) << endl;
+//       // cout << WP(1,0)<< endl;
+//       // cout << WP(2,0) << endl;
+//      // unsigned char *wp = (unsigned char*)(IP.data);
+//       
+//      worldx = float(((WP(0,0)/WP(2,0))*xboxdepth1));
+//      worldy = float(((WP(1,0)/WP(2,0))*xboxdepth1));
+//       Point_<float> worldxy(worldx,worldy);
+//       
+//       
+//       return worldxy;
+//    
+//    }
     
+    Point_<double> compute_world_points1(double imagex, double imagey, Mat depth){
+//        Point_<float> Depth3D;
+        Mat ip = (Mat_<double>(3,1) << (320-imagex),(imagey-240),1);
+        Mat ip_new = CM1.inv()*ip;
+        Mat wp = (ip_new-T);
+        Mat wp_new = R.t()*wp; 
+//        float ip[4][1] = {imagex,imagey, 1,1};
+//        Mat ImagePoints = Mat(4,1,CV_64F, ip);
+//        float wp[4][1] = {1,1,1,1};
+//        Mat WorldPoints = Mat(4,1,CV_64F,wp);
+//        WorldPoints = P.inv()*ImagePoints;
+        //cout <<  "World matrix" << ip_new << endl;
+        //scout <<  "World matrix" << wp_new << endl;
+         //cout <<  "World matrix" << wp.at<float>(2,0) << endl;
+        // cout <<  "World matrix" << WorldPoints.at<float>(3,0) << endl;
+        // add row for CM1 her
+         Point_<double> worldxy;
+         
+         worldxy.x = (wp.at<double>(0,0)/wp.at<double>(2,0))*raw_depth_to_meters((depth.at<unsigned short>(imagey, imagex) - 208 - 175));
+         worldxy.y = (wp.at<double>(1,0)/wp.at<double>(2,0))*raw_depth_to_meters((depth.at<unsigned short>(imagey, imagex) - 208 - 175));
+         return worldxy;
+  
     }
+    
+//   void addvalues_dstCoeff(){
+//        dstCoeff.at<float>(0,0) = 1.8214054882125558e-01;
+//        dstCoeff.at<float>(1,0) = -5.6454045166848910e-01;
+//        dstCoeff.at<float>(2,0) = -1.3961377280662568e-02;
+//        dstCoeff.at<float>(3,0) = 5.0548940995638501e-03;
+//        dstCoeff.at<float>(4,0) = 1.0268389479216953e+00;
+//        
+//        dstCoeff_d.at<float>(0,0) = -2.6386489753128833e-01;
+//        dstCoeff_d.at<float>(1,0) = 9.9966832163729757e-01;
+//        dstCoeff_d.at<float>(2,0) = -7.6275862143610667e-04;
+//        dstCoeff_d.at<float>(3,0) = 5.0350940090814270e-03;
+//        dstCoeff_d.at<float>(4,0) = -1.3053628089976321e+00;
+//   
+//    }
+    
+    
 Mat detectfeatures(Mat color, Mat depth)
 {
     Mat frame_gray, gray_resized, color_resized, depth_resized;
     Mat faces_host, eyes_host;
     //Mat eyes,faces;
-
+   
     double t = (double)getTickCount();
 
     cvtColor( color, frame_gray, CV_BGR2GRAY );
@@ -421,8 +471,15 @@ Mat detectfeatures(Mat color, Mat depth)
     resize(frame_gray, gray_resized, Size(), fx, fy, interpol);
     resize(color, color_resized, Size(), fx, fy, interpol);         //for opencv window       
     resize(depth, depth_resized, Size(), fx, fy, interpol);           
-    //Mat frame_gray_gpu(gray_resized);                  //move grayed color image to gpu
-
+    //Mat frame_gray_gpu(gray_resized);  
+     Mat R,mapx,mapy,fnew,R1,mapx_d,mapy_d,f_dnew;
+     
+     //move grayed color image to gpu
+    initUndistortRectifyMap(CM1,D1,R,fnew,Size(fx*640,fy*480),CV_32FC1,mapx,mapy);
+    initUndistortRectifyMap(CM2,D2,R1,f_dnew,Size(fx*640,fy*480),CV_32FC1,mapx_d,mapy_d);
+    remap(gray_resized,gray_resized,mapx,mapy,INTER_LINEAR);
+    remap(color_resized,color_resized,mapx,mapy,INTER_LINEAR);
+    remap(depth_resized,depth_resized,mapx_d,mapy_d,INTER_LINEAR);
     //-- Detect faces    
     //faces.create(1, 100, cv::DataType<cv::Rect>::type);   //preallocate gpu faces
      std::vector<Rect> faces;
@@ -441,8 +498,11 @@ Mat detectfeatures(Mat color, Mat depth)
   for( size_t i = 0; i < faces.size(); i++ )
   {
       std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+              
         start = chrono::high_resolution_clock::now();
+      
     Point face_center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
+    
     ellipse( color_resized, face_center, Size( faces[i].width*0.5, faces[i].height*0.75), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
 
     Mat faceROI = gray_resized( faces[i] );
@@ -460,8 +520,8 @@ Mat detectfeatures(Mat color, Mat depth)
        xboxdepth  = raw_depth_to_meters((depth_resized.at<unsigned short>(eye_center.y, eye_center.x) - 208 - 175));
        else if (eye_center.x < face_center.x){
        xboxdepth1 = raw_depth_to_meters((depth_resized.at<unsigned short>(eye_center.y, eye_center.x) - 208 - 175));
-       imagex = float(eye_center.x);
-       imagey = float(eye_center.y);
+       imagex = double(eye_center.x);
+       imagey = double(eye_center.y);
        //Matx41f scalar(1,1,1,1);
        // S = Mat(scalar);
        
@@ -475,7 +535,7 @@ Mat detectfeatures(Mat color, Mat depth)
         float deltaT = chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0;
         Mat measurement = Mat(1, 1, CV_32F, xboxdepth);
         
-        Point_<float> worldxy = compute_world_points(imagex,imagey,xboxdepth1);
+        Point_<float> worldxy = compute_world_points1(imagex,imagey,depth_resized);
         
        // cout << worldxy.x << endl;
        // cout << worldxy.y << endl;
@@ -579,7 +639,38 @@ int main( int argc, char* argv[] )
     oss << "starting...";
 
     begin = std::chrono::high_resolution_clock::now();
-
+    cout << "\nOpening files" << endl;
+    //addvalues_dstCoeff();
+    FileStorage fs1("mystereocalib1.yml", FileStorage::READ);
+    fs1["CM1"] >> CM1;
+    fs1["CM2"] >> CM2;
+    //Mat CM1 = Mat(3, 3, CV_64FC1);
+    //Mat CM2 = Mat(3, 3, CV_64FC1);
+     fs1["D1"] >> D1;
+     fs1["D2"] >> D2;
+     fs1["R"]  >> R;
+     fs1["T"]  >> T;
+     fs1.release();
+      cout << "\nOpening files" << endl;
+     // Mat RotT(3,3,CV_32FC1);
+     cout << "\nOpening files" << endl;
+     //R.copyTo(RotT);
+     //T.copyTo(Mat(RotT.col(3)));
+     hconcat(R,T,RotT);
+     //assert(3 == RotT.rows && 4 == RotT.cols);
+     
+     cout << "\nOpening file5" << endl;
+     P = CM1*RotT;
+     cout << "\nOpening file5"  << endl;
+     Mat dummy = (Mat_<double>(1,4) << 0,0,0,1);
+      cout << "\nOpening files" << P <<  endl;
+    // P.row(3) = Mat(1,4,CV_32F,dummy);
+      //dummy.copyTo(P.row(3));
+      //Mat P0[] = {P,dummy};
+      vconcat(P,dummy,P1);
+     // assert(4 == P1.rows && 4 == P1.cols);
+    cout << "\nOpening files2" << endl;
+    
     for(;;)
     {  
         //time_seconds = std::chrono::high_resolution_clock::now();
