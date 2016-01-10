@@ -67,49 +67,7 @@ Mat detectfeatures( Mat color, Mat depthMap );
 void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat Kk);
 void kalman(float deltaT, Mat measurement);
 
-//Mat depth, color;
-
-// Camera Calibration Parameters
-
-//Intrinsic
-//const Matx33f f(5.2334888056605109e+02, 0, 3.3077859778899148e+02, 0,
-//       5.2640349339321790e+02, 2.4796327924961466e+02, 0, 0, 1);
-//
-//const Matx33f f_d(5.9421434211923247e+02,0,3.3930780975300314e+02,
-//        0,5.9104053696870778e+02,2.4273913761751615e+02,0,0,1);
-////Distortion
-//Mat_<float> dstCoeff(5,1);
-//Mat_<float> dstCoeff_d(5,1);
-//
-//
-// 
-////Extrinsic
-//const Matx34f RT( 9.9984628826577793e-01, 1.2635359098409581e-03,
-//-1.7487233004436643e-02, -1.4779096108364480e-03,
-//9.9992385683542895e-01, -1.2251380107679535e-02,
-//1.7470421412464927e-02, 1.2275341476520762e-02,
-//9.9977202419716948e-01 );
-
-
-//Mat I = Mat(f);
-//Mat E = Mat(RT);
-
-//Mat P = I*E;
-//Matx34f Ptemp = f*RT;
-//Matx33f Prod1(Ptemp(0,0),Ptemp(0,1),Ptemp(0,2),
-               // Ptemp(1,0),Ptemp(1,1),Ptemp(0,2),
-               // Ptemp(2,0),Ptemp(2,1),Ptemp(2,2));
-
-//Distortion
-//const float dist =  1.2453643444153988e-01; // will change. Using this for calculation purpose.
-       
-//Matx33f Prod = Prod1; //first 3 columns of projection matrix
-
-//Matx31f T(Ptemp(0,3),Ptemp(1,3),Ptemp(2,3)); // last column of projection matrix
-       //unsigned char *offset = (unsigned char*)(T.data);
-      // float offx = float(&offset[0]);
-      // float offy = float(&offset[1]);
-      // float offz = float(&offset[2]);
+//Initializing camera matrices
   Mat CM1,CM2,D1,D2,R, T,RotT,P,P1,RotT1;
   
 static void help()
@@ -390,49 +348,14 @@ void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat 
   }
   return 0;
 }
-//    Point_<float> compute_world_points(float imagex, float imagey, float xboxdepth1){
-//  ////////////////////Computation begins here ////////////////////////////////////////////      
-//        
-//      Matx33f IP(imagex - T(0,0), 
-//                    imagey- T(0,1),
-//                     1 - T(0,2));
-//
-//      //Matx33f WP = Prod.inv()*IP;
-//      // cv::solve(Prod,IP,WP);
-//       
-//       cout<< "ROWS"<<IP.rows << endl;
-//       cout<< "columns"<<IP.cols << endl;
-//       //cout<< RT(2,2)<<endl;
-//       // cout << WP(0,0) << endl;
-//       // cout << WP(1,0)<< endl;
-//       // cout << WP(2,0) << endl;
-//      // unsigned char *wp = (unsigned char*)(IP.data);
-//       
-//      worldx = float(((WP(0,0)/WP(2,0))*xboxdepth1));
-//      worldy = float(((WP(1,0)/WP(2,0))*xboxdepth1));
-//       Point_<float> worldxy(worldx,worldy);
-//       
-//       
-//       return worldxy;
-//    
-//    }
-    
+
     Point_<double> compute_world_points1(double imagex, double imagey, Mat depth){
 //        Point_<float> Depth3D;
         Mat ip = (Mat_<double>(3,1) << (320-imagex),(imagey-240),1);
         Mat ip_new = CM1.inv()*ip;
         Mat wp = (ip_new-T);
         Mat wp_new = R.t()*wp; 
-//        float ip[4][1] = {imagex,imagey, 1,1};
-//        Mat ImagePoints = Mat(4,1,CV_64F, ip);
-//        float wp[4][1] = {1,1,1,1};
-//        Mat WorldPoints = Mat(4,1,CV_64F,wp);
-//        WorldPoints = P.inv()*ImagePoints;
-        //cout <<  "World matrix" << ip_new << endl;
-        //scout <<  "World matrix" << wp_new << endl;
-         //cout <<  "World matrix" << wp.at<float>(2,0) << endl;
-        // cout <<  "World matrix" << WorldPoints.at<float>(3,0) << endl;
-        // add row for CM1 her
+
          Point_<double> worldxy;
          
          worldxy.x = (wp.at<double>(0,0)/wp.at<double>(2,0))*raw_depth_to_meters((depth.at<unsigned short>(imagey, imagex) - 208 - 175));
@@ -441,20 +364,6 @@ void talker(float& xboxobs, Mat prediction, Mat update, Mat Pkkm1, Mat Pkk, Mat 
   
     }
     
-//   void addvalues_dstCoeff(){
-//        dstCoeff.at<float>(0,0) = 1.8214054882125558e-01;
-//        dstCoeff.at<float>(1,0) = -5.6454045166848910e-01;
-//        dstCoeff.at<float>(2,0) = -1.3961377280662568e-02;
-//        dstCoeff.at<float>(3,0) = 5.0548940995638501e-03;
-//        dstCoeff.at<float>(4,0) = 1.0268389479216953e+00;
-//        
-//        dstCoeff_d.at<float>(0,0) = -2.6386489753128833e-01;
-//        dstCoeff_d.at<float>(1,0) = 9.9966832163729757e-01;
-//        dstCoeff_d.at<float>(2,0) = -7.6275862143610667e-04;
-//        dstCoeff_d.at<float>(3,0) = 5.0350940090814270e-03;
-//        dstCoeff_d.at<float>(4,0) = -1.3053628089976321e+00;
-//   
-//    }
     
     
 Mat detectfeatures(Mat color, Mat depth)
@@ -578,18 +487,7 @@ int main( int argc, char* argv[] )
     face_cascade.load( face_cascade_name );
     eyes_cascade.load( eyes_cascade_name );
 
-    //load gpu cascades
-    //face_cascade_gpu.load( face_cascade_name );
-    //eyes_cascade_gpu.load( eyes_cascade_name );
-
-    //int gpuCnt = getCudaEnabledDeviceCount();   // gpuCnt >0 if CUDA device detected
-
-    //cout <<"Number of Gpus: " << gpuCnt << endl;
-
-    //if(gpuCnt==0)
-   // {
-    //    return 0;                       // no CUDA device found, quit
-    //} 
+   
 
     setIdentity(KF.measurementMatrix);
     setIdentity(KF.processNoiseCov, Scalar::all(Qt));
